@@ -28,6 +28,7 @@ jobs:
     timeout-minutes: 30
     env:
       KRMAP_DATABASE_URL: sqlite:///./data/krmap.db
+      TZ: Asia/Seoul # 러너는 UTC. 로그·파일 시각을 한국 시간으로
     steps:
       - uses: actions/checkout@v4
 

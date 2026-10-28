@@ -10,7 +10,7 @@
 import argparse
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects import postgresql, sqlite
@@ -21,6 +21,7 @@ from app.db.session import SessionLocal, init_db
 from app.providers.base import Bar, DataProvider, Quote
 from app.providers.naver import NaverProvider
 from app.services.map_builder import CALENDAR_CODE, rebuild_snapshots
+from app.services.market_hours import now_kst
 from app.services.sectors import sector_of
 
 log = logging.getLogger(__name__)
@@ -48,7 +49,7 @@ def refresh_quotes(db: Session, provider: DataProvider, with_industries: bool = 
     if with_industries or any(q.code not in known for q in quotes):
         industries = provider.industries()
 
-    now = datetime.now()
+    now = now_kst()
     stock_rows, price_rows = [], []
     for q in quotes:
         industry = industries.get(q.code) or known.get(q.code)
@@ -151,7 +152,7 @@ def run(command: str, days: int = 400, provider: str = "naver") -> None:
         except Exception as e:
             db.rollback()
             db.merge(Meta(key="last_error", value=f"{command}: {type(e).__name__}: {e}"[:500]))
-            db.merge(Meta(key="last_error_at", value=datetime.now().isoformat(timespec="seconds")))
+            db.merge(Meta(key="last_error_at", value=now_kst().isoformat(timespec="seconds")))
             db.commit()
             raise
 

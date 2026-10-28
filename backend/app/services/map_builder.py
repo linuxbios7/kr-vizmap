@@ -2,12 +2,13 @@
 
 import json
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import DailyPrice, Meta, Snapshot, Stock
+from app.services.market_hours import now_kst
 from app.services.returns import PERIODS, base_date, pct_change
 
 MARKETS = ("KOSPI", "KOSDAQ", "ALL")
@@ -125,7 +126,7 @@ def build_bubbles(db: Session, market: str) -> dict:
 
 def rebuild_snapshots(db: Session) -> int:
     """모든 시장×기간 맵 스냅샷과 시장별 버블 스냅샷을 다시 만들어 저장한다."""
-    now = datetime.now()
+    now = now_kst()
     for market in MARKETS:
         db.merge(
             Snapshot(

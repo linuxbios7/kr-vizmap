@@ -11,7 +11,6 @@
 import argparse
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy import select
@@ -20,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.db.models import Meta, Snapshot
 from app.db.session import SessionLocal, init_db
 from app.services.map_builder import BUBBLES
+from app.services.market_hours import now_kst
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def export_static(db: Session, out: Path) -> int:
     health = {
         "status": "ok",
         "static": True,
-        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "generated_at": now_kst().isoformat(timespec="seconds"),
         "last_collected": meta.get("last_quotes"),
         "last_snapshot": meta.get("last_snapshot"),
     }
