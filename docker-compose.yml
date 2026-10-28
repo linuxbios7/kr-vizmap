@@ -1,0 +1,37 @@
+# 개발용: 코드 변경 시 자동 재시작. 운영은 docker-compose.prod.yml
+services:
+  backend:
+    build:
+      context: ./backend
+      args:
+        INSTALL_DEV: "true"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      - krmap-data:/data
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      BACKEND_URL: http://backend:8000
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  krmap-data:

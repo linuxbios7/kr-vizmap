@@ -1,0 +1,92 @@
+# GitHub Pages 배포: 시세 수집 → 정적 JSON 내보내기 → Next.js 정적 빌드 → Pages 배포
+#
+# 처음 한 번: 저장소 Settings → Pages → Build and deployment → Source를 "GitHub Actions"로.
+# 예약 실행은 기본 브랜치에서만 돌고, GitHub 사정으로 수 분~수십 분 늦을 수 있다.
+name: Pages
+
+on:
+  schedule:
+    - cron: "*/15 0-6 * * 1-5" # 평일 KST 09:00~15:45, 15분마다 (UTC 기준)
+    - cron: "40 7 * * 1-5" # 평일 KST 16:40, 장 마감 후 확정 시세
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포가 겹치지 않게 하나씩 (진행 중인 배포는 끝까지)
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      KRMAP_DATABASE_URL: sqlite:///./data/krmap.db
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install ./backend
+
+      # 이전 실행의 DB(1년치 일봉)를 이어 쓴다. 없으면 수집 잡이 전체 백필(약 1~2분).
+      - name: Restore market DB
+        uses: actions/cache/restore@v4
+        with:
+          path: backend/data/krmap.db
+          key: krmap-db-${{ github.run_id }}
+          restore-keys: krmap-db-
+
+      - name: Collect quotes
+        working-directory: backend
+        run: python -m app.jobs.collector all
+
+      - name: Export static JSON
+        working-directory: backend
+        run: python -m app.jobs.export_static --out ../frontend/public/data
+
+      - name: Save market DB
+        uses: actions/cache/save@v4
+        with:
+          path: backend/data/krmap.db
+          key: krmap-db-${{ github.run_id }}
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build static site
+        working-directory: frontend
+        run: npm ci && npm run build
+        env:
+          NEXT_EXPORT: "1"
+          # 프로젝트 페이지면 "/<저장소명>", 사용자 페이지·커스텀 도메인이면 ""
+          NEXT_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

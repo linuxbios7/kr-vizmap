@@ -1,0 +1,30 @@
+# 운영용 (단일 서버). 사용: docker compose -f docker-compose.prod.yml up -d --build
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      KRMAP_SCHEDULER_ENABLED: "true"
+    volumes:
+      - krmap-data:/data
+    # 외부에 직접 노출하지 않는다 (프론트가 /api 를 프록시)
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8000
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  krmap-data:

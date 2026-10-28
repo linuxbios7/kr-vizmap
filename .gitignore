@@ -1,0 +1,32 @@
+# env
+.env
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+backend/data/
+
+# node
+node_modules/
+.next/
+.next-e2e/
+.next-sa/
+frontend/out/
+frontend/public/data/
+playwright-report/
+test-results/
+next-env.d.ts
+*.tsbuildinfo
+
+# os/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# local tooling (absolute paths)
+.claude/
