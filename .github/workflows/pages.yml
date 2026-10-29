@@ -6,8 +6,9 @@ name: Pages
 
 on:
   schedule:
-    - cron: "*/15 0-6 * * 1-5" # 평일 KST 09:00~15:45, 15분마다 (UTC 기준)
-    - cron: "40 7 * * 1-5" # 평일 KST 16:40, 장 마감 후 확정 시세
+    # GitHub은 부하가 크면 예약 실행을 건너뛴다. 자주 걸어 둘수록 실제 갱신 간격이 짧아진다.
+    - cron: "*/5 0-6 * * 1-5" # 평일 KST 09:00~15:55, 5분마다 (UTC 기준)
+    - cron: "40 7 * * 1-5" # 평일 KST 16:40, 장 마감 후 확정 시세 + 업종 재매핑 + 신규 종목 백필
   push:
     branches: [main]
   workflow_dispatch:
@@ -46,9 +47,16 @@ jobs:
           key: krmap-db-${{ github.run_id }}
           restore-keys: krmap-db-
 
+      # 장중 예약 실행은 시세만 갱신(약 15초), 장 마감·수동·push 실행은 전체 수집.
+      # 캐시된 DB가 없으면(만료 등) 장중이라도 전체 수집으로 일봉을 다시 채운다.
       - name: Collect quotes
         working-directory: backend
-        run: python -m app.jobs.collector all
+        env:
+          MODE: ${{ github.event.schedule == '*/5 0-6 * * 1-5' && 'refresh' || 'all' }}
+        run: |
+          if [ "$MODE" = refresh ] && [ ! -f data/krmap.db ]; then MODE=all; fi
+          echo "collect mode: $MODE"
+          python -m app.jobs.collector "$MODE"
 
       - name: Export static JSON
         working-directory: backend
