@@ -13,6 +13,7 @@ import { fetcher, type BubbleResponse, type MapNode, type MapResponse } from "@/
 import { bubblesToTree } from "@/lib/bubbleLayout";
 import { STATIC_DATA, urls } from "@/lib/dataSource";
 import { PERIOD_RANGE } from "@/lib/colorScale";
+import { formatKstStamp } from "@/lib/format";
 import { allStocks, isUnder, pruneTopN, type StockHit } from "@/lib/search";
 import { isStale } from "@/lib/staleness";
 import { findNode } from "@/lib/treemapLayout";
@@ -65,6 +66,9 @@ function MapPage() {
     fetcher,
     { refreshInterval: 60_000 },
   );
+  // 우측 상단 표시: 마지막 수집 시각(없으면 시세 기준시각)
+  const updatedAt =
+    health?.last_collected ?? (view === "map" ? mapRes.data?.asof : bubbleRes.data?.asof) ?? null;
   const stale = health
     ? STATIC_DATA
       ? isStale(health.last_collected ?? null, new Date(), 60)
@@ -123,29 +127,40 @@ function MapPage() {
   return (
     <main className="page">
       <header className="topbar">
-        <h1>KR Market Map</h1>
-        <div className="segmented" role="group" aria-label="화면">
-          {VIEWS.map((v) => (
-            <button
-              key={v.value}
-              type="button"
-              className={view === v.value ? "active" : undefined}
-              aria-pressed={view === v.value}
-              onClick={() => update({ view: v.value })}
-            >
-              {v.label}
-            </button>
-          ))}
+        <div className="topbar-main">
+          <h1>KR Market Map</h1>
+          <div className="segmented" role="group" aria-label="화면">
+            {VIEWS.map((v) => (
+              <button
+                key={v.value}
+                type="button"
+                className={view === v.value ? "active" : undefined}
+                aria-pressed={view === v.value}
+                onClick={() => update({ view: v.value })}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <SearchBox data={tree} selected={highlight} onSelect={onSearch} />
+          <ControlBar
+            market={market}
+            period={period}
+            colorMode={colorMode}
+            onMarket={(m) => update({ market: m, highlight: null })}
+            onPeriod={(p) => update({ period: p })}
+            onColorMode={(c) => update({ colorMode: c })}
+          />
         </div>
-        <SearchBox data={tree} selected={highlight} onSelect={onSearch} />
-        <ControlBar
-          market={market}
-          period={period}
-          colorMode={colorMode}
-          onMarket={(m) => update({ market: m, highlight: null })}
-          onPeriod={(p) => update({ period: p })}
-          onColorMode={(c) => update({ colorMode: c })}
-        />
+        {updatedAt && (
+          <time
+            className={stale ? "updated is-stale" : "updated"}
+            dateTime={`${updatedAt}+09:00`}
+            title="마지막 시세 수집 시각 (한국시간)"
+          >
+            업데이트 {formatKstStamp(updatedAt)}
+          </time>
+        )}
       </header>
 
       {view === "bubble" && (

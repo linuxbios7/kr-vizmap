@@ -16,3 +16,12 @@ export function formatCap(won: number): string {
 export function naverUrl(code: string): string {
   return `https://finance.naver.com/item/main.naver?code=${code}`;
 }
+
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+/** 'YYYY-MM-DDTHH:MM:SS'(KST) → '2026-11-03(화) 14:27' */
+export function formatKstStamp(s: string): string {
+  const day = s.slice(0, 10);
+  const wd = new Date(`${day}T00:00:00Z`).getUTCDay();
+  return `${day}(${WEEKDAYS[wd]}) ${s.slice(11, 16)}`;
+}

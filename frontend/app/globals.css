@@ -41,9 +41,31 @@ body {
 
 .topbar {
   display: flex;
+  align-items: flex-start;
+  gap: 8px 16px;
+}
+
+.topbar-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
+}
+
+/* 우측 상단 업데이트 시각 */
+.updated {
+  flex: none;
+  line-height: 28px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.updated.is-stale {
+  color: #ffcc4d;
 }
 
 .topbar h1 {
@@ -376,7 +398,19 @@ body {
   }
 
   .topbar {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .topbar-main {
     gap: 6px;
+  }
+
+  .updated {
+    align-self: flex-end;
+    line-height: normal;
+    font-size: 11px;
   }
 
   .topbar h1 {

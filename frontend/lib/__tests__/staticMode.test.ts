@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dataUrls } from "../dataSource";
+import { formatKstStamp } from "../format";
 import { isMarketOpen, isStale } from "../staleness";
 
 describe("dataUrls", () => {
@@ -39,5 +40,12 @@ describe("isStale (KST)", () => {
     expect(isStale("2026-10-23T15:30:00", at("2026-10-26T18:00:00"), 60)).toBe(true);
     expect(isStale("2026-10-23T15:30:00", at("2026-10-25T12:00:00"), 60)).toBe(false);
     expect(isStale(null, at("2026-10-26T11:00:00"), 60)).toBe(true);
+  });
+});
+
+describe("formatKstStamp", () => {
+  it("요일과 분까지", () => {
+    expect(formatKstStamp("2026-11-03T14:27:54")).toBe("2026-11-03(화) 14:27");
+    expect(formatKstStamp("2026-11-01T09:05:00")).toBe("2026-11-01(일) 09:05");
   });
 });
